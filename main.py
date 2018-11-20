@@ -173,10 +173,20 @@ class CifarNet():
         # Affine layer from 1024 input units to 10 outputs
         affine2 = tf.matmul(drop1, self.W2) + self.b2
         # vanilla batch normalization
-        affine2_flat = tf.reshape(affine2,[-1,3136])
         self.predict = tf.layers.batch_normalization(inputs=affine2, center=True, scale=True, training=is_training)
         print(self.predict.shape)
         return self.predict
+
+    def infer(self, session, Xd):
+        prediction = self.predict
+        variables = [prediction]
+        
+        feed_dict = {X: Xd,
+                    is_training: False }
+
+        pred = session.run(variables,feed_dict=feed_dict)
+        
+        return pred
 
 
 
@@ -286,6 +296,10 @@ sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
 for k in range(30):
+    se = L[0:1,:,:,:]
+    print('Predicting')
+    p = h1.infer(sess,se)
+    print('Prediction => ',np.argmax(p))
     print('Training')
     h1.run(sess, mean_loss, L, L_y, 5, 64, 200, train_step, plot_losses=False)
     print('Validation')
