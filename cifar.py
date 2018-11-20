@@ -5,29 +5,22 @@ import math
 # define net
 class CifarNet():
 
-    def __init__(self, X, y, is_training):
+    def __init__(self, X, y, is_training, modelName):
         self.X = X
         self.y = y
         self.is_training = is_training
-        # conv layer
-        # H2 = (H1 - F + 2P)/S +1
-        # (32-5)/1 + 1 = 28
-        # 28x28x32 = 25088
-        # To ReLu (?x16x16x32) -> MaxPool (?x16x16x32) -> affine (8192)
-        self.Wconv1 = tf.get_variable("Wconv1", shape=[5, 5, 3, 32])
-        self.bconv1 = tf.get_variable("bconv1", shape=[32])
-        # (32-5)/1 + 1 = 28
-        # 28x28x64 = 50176
-        self.Wconv2 = tf.get_variable("Wconv2", shape=[5, 5, 32, 64])
-        self.bconv2 = tf.get_variable("bconv2", shape=[64])
-        # affine layer with 1024
-        self.W1 = tf.get_variable("W1", shape=[3136, 1024])
-        self.b1 = tf.get_variable("b1", shape=[1024])
-        # affine layer with 10
-        #self.W2 = tf.get_variable("W2", shape=[1024, 10])
-        #self.b2 = tf.get_variable("b2", shape=[10])
-        self.W2 = tf.get_variable("W2", shape=[1024, 2])
-        self.b2 = tf.get_variable("b2", shape=[2])           
+
+        self.Wconv1 = tf.get_variable("Wconv1"+modelName, shape=[5, 5, 3, 32])
+        self.bconv1 = tf.get_variable("bconv1"+modelName, shape=[32])
+
+        self.Wconv2 = tf.get_variable("Wconv2"+modelName, shape=[5, 5, 32, 64])
+        self.bconv2 = tf.get_variable("bconv2"+modelName, shape=[64])
+
+        self.W1 = tf.get_variable("W1"+modelName, shape=[3136, 1024])
+        self.b1 = tf.get_variable("b1"+modelName, shape=[1024])
+
+        self.W2 = tf.get_variable("W2"+modelName, shape=[1024, 2])
+        self.b2 = tf.get_variable("b2"+modelName, shape=[2])         
         
 
     def set_params(self):
@@ -52,17 +45,17 @@ class CifarNet():
         self.optimizer = tf.train.AdamOptimizer(self.exp_learning_rate)
 
         # batch normalization in tensorflow requires this extra dependency
-        self.extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        with tf.control_dependencies(self.extra_update_ops):
-            self.train_step = self.optimizer.minimize(self.mean_loss, global_step=self.global_step)
+        #self.extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        #with tf.control_dependencies(self.extra_update_ops):
+        self.train_step = self.optimizer.minimize(self.mean_loss, global_step=self.global_step)
 
 
 
 
-    def forward(self, X, y, is_training):
+    def forward(self):
 
         # define our graph (e.g. two_layer_convnet) with stride 1
-        conv1 = tf.nn.conv2d(X, self.Wconv1, strides=[1, 1, 1, 1], padding='SAME') + self.bconv1
+        conv1 = tf.nn.conv2d(self.X, self.Wconv1, strides=[1, 1, 1, 1], padding='SAME') + self.bconv1
         print(conv1.shape)
         # ReLU Activation Layer
         relu1 = tf.nn.relu(conv1)
@@ -78,23 +71,23 @@ class CifarNet():
         print(maxpool.shape)
         maxpool_flat = tf.reshape(maxpool,[-1,3136])
         # Spatial Batch Normalization Layer (trainable parameters, with scale and centering)
-        bn1 = tf.layers.batch_normalization(inputs=maxpool_flat, center=True, scale=True, training=is_training)
+        bn1 = tf.layers.batch_normalization(inputs=maxpool_flat, center=True, scale=True, training=self.is_training)
         # Affine layer with 1024 output units
         affine1 = tf.matmul(bn1, self.W1) + self.b1
         print(affine1.shape)
         # vanilla batch normalization
         affine1_flat = tf.reshape(affine1,[-1,1024])
-        bn2 = tf.layers.batch_normalization(inputs=affine1, center=True, scale=True, training=is_training)
+        bn2 = tf.layers.batch_normalization(inputs=affine1, center=True, scale=True, training=self.is_training)
         print(bn2.shape)
         # ReLU Activation Layer
         relu2 = tf.nn.relu(bn2)
         print(relu2.shape)
         # dropout
-        drop1 = tf.layers.dropout(inputs=relu2, training=is_training)
+        drop1 = tf.layers.dropout(inputs=relu2, training=self.is_training)
         # Affine layer from 1024 input units to 10 outputs
         affine2 = tf.matmul(drop1, self.W2) + self.b2
         # vanilla batch normalization
-        self.predict = tf.layers.batch_normalization(inputs=affine2, center=True, scale=True, training=is_training)
+        self.predict = tf.layers.batch_normalization(inputs=affine2, center=True, scale=True, training=self.is_training)
         print(self.predict.shape)
         return self.predict
 
@@ -109,9 +102,9 @@ class CifarNet():
         
         return pred
 
-    def run(self, session, loss_val, Xd, yd,
+    def run(self, session, Xd, yd,
                   epochs=1, batch_size=64, print_every=100,
-                  training=None, plot_losses=False, isSoftMax=False):
+                  plot_losses=False, isSoftMax=False):
         # have tensorflow compute accuracy
         if isSoftMax:
             correct_prediction = tf.nn.softmax(self.predict)
@@ -123,13 +116,13 @@ class CifarNet():
         train_indicies = np.arange(Xd.shape[0])
         np.random.shuffle(train_indicies)
 
-        training_now = training is not None
+        training_now = self.train_step is not None
 
         # setting up variables we want to compute (and optimizing)
         # if we have a training function, add that to things we compute
-        variables = [loss_val, correct_prediction, accuracy]
-        if training_now:
-            variables[-1] = training
+        variables = [self.mean_loss, correct_prediction, accuracy]
+        if self.train_step:
+            variables[-1] = self.train_step
 
         # counter 
         iter_cnt = 0

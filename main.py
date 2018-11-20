@@ -99,25 +99,48 @@ L_y = y_train[0:1000]
 
 
 tf.reset_default_graph()
-X = tf.placeholder(tf.float32, [None, 32, 32, 3])
-y = tf.placeholder(tf.int64, [None])
-is_training = tf.placeholder(tf.bool)
-h1 = cifar.CifarNet(X,y,is_training)
-h1.forward(X,y,is_training)
+
+#with tf.variable_scope('h1'):
+X1 = tf.placeholder(tf.float32, [None, 32, 32, 3])
+y1 = tf.placeholder(tf.int64, [None])
+is_training1 = tf.placeholder(tf.bool)
+h1 = cifar.CifarNet(X1,y1,is_training1,"1")
+h1.forward()
 h1.set_params()
 
+#with tf.variable_scope('h2'):
+X2 = tf.placeholder(tf.float32, [None, 32, 32, 3])
+y2 = tf.placeholder(tf.int64, [None])
+is_training2 = tf.placeholder(tf.bool)
+h2 = cifar.CifarNet(X2,y2,is_training2,"2")
+h2.forward()
+h2.set_params()
 
 # train with 10 epochs
 sess = tf.Session()
+init = tf.global_variables_initializer()
+sess.run(init)
 
-sess.run(tf.global_variables_initializer())
 
-for k in range(30):
+for k in range(1):
     se = L[0:1,:,:,:]
-    print('Predicting')
+    print('Predicting h1')
     p = h1.infer(sess,se)
-    print('Prediction => ',np.argmax(p))
-    print('Training')
-    h1.run(sess, h1.mean_loss, L, L_y, 5, 64, 200, h1.train_step, plot_losses=False)
-    print('Validation')
-    h1.run(sess, h1.mean_loss, X_val, y_val, 1, 64)
+    print('Prediction h1 => ',np.argmax(p))
+
+    se = L[0:1,:,:,:]
+    print('Predicting h2')
+    p = h2.infer(sess,se)
+    print('Prediction h2 => ',np.argmax(p))
+
+    print('Training h1')
+    h1.run(sess, L, L_y, 1, 64, 200, plot_losses=False)
+
+    print('Training h2')
+    h2.run(sess, L, L_y, 1, 64, 200, plot_losses=False)
+    
+    print('Validation h1')
+    h1.run(sess, X_val, y_val, 1, 64)
+
+    print('Validation h2')
+    h2.run(sess, X_val, y_val, 1, 64)
