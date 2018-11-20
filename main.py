@@ -1,7 +1,10 @@
 import tensorflow as tf
 import numpy as np
 import math
-
+import platform
+import cPickle as pickle
+import random
+import os
 
 classes = ('plane', 'car', 'bird', 'cat',
            'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
@@ -67,6 +70,30 @@ def get_CIFAR10_data(num_training=49000, num_validation=1000, num_test=10000):
 
 
 
+# Invoke the above function to get our data.
+X_train, y_train, X_val, y_val, X_test, y_test = get_CIFAR10_data()
+
+for i in range(len(y_train)):
+    if y_train[i] == 1:
+        continue
+    else:
+        y_train[i] = 0
+
+for i in range(len(y_val)):
+    if y_val[i] == 1:
+        continue
+    else:
+        y_val[i] = 0
+
+for i in range(len(y_test)):
+    if y_test[i] == 1:
+        continue
+    else:
+        y_test[i] = 0
+
+L = X_train[0:1000,:,:,:] # a set L of labeled training examples
+U = X_train[1000:,:,:,:] # a set U of unlabeled examples
+L_y = y_train[0:1000]
 
 # define net
 class CifarNet():
@@ -221,3 +248,45 @@ class CifarNet():
         return total_loss, total_correct
 
 
+tf.reset_default_graph()
+X = tf.placeholder(tf.float32, [None, 32, 32, 3])
+y = tf.placeholder(tf.int64, [None])
+is_training = tf.placeholder(tf.bool)
+h1 = CifarNet()
+h1.forward(X,y,is_training)
+
+
+global_step = tf.Variable(0, trainable=False)
+starter_learning_rate = 1e-3
+end_learning_rate = 5e-3
+decay_steps = 10000
+
+learning_rate = tf.train.polynomial_decay(starter_learning_rate, global_step,
+                                        decay_steps, end_learning_rate,
+                                        power=0.5)
+
+exp_learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
+                                            100000, 0.96, staircase=True)
+
+# define our loss
+cross_entr_loss = tf.nn.softmax_cross_entropy_with_logits(labels=tf.one_hot(y,2), logits=h1.predict)
+mean_loss = tf.reduce_mean(cross_entr_loss)
+
+# define our optimizer
+optimizer = tf.train.AdamOptimizer(exp_learning_rate)
+
+# batch normalization in tensorflow requires this extra dependency
+extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+with tf.control_dependencies(extra_update_ops):
+    train_step = optimizer.minimize(mean_loss, global_step=global_step)
+
+# train with 10 epochs
+sess = tf.Session()
+
+sess.run(tf.global_variables_initializer())
+
+for k in range(30):
+    print('Training')
+    h1.run(sess, mean_loss, L, L_y, 5, 64, 200, train_step, plot_losses=False)
+    print('Validation')
+    h1.run(sess, mean_loss, X_val, y_val, 1, 64)
