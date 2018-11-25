@@ -122,22 +122,126 @@ init = tf.global_variables_initializer()
 sess.run(init)
 
 
-for k in range(1):
-    se = L[0:1,:,:,:]
-    print('Predicting h1')
-    p = h1.infer(sess,se)
-    print('Prediction h1 => ',np.argmax(p))
+u = 75 # Choose u examples from U
+Uhat = []
+tmp = list(U)
+for i in range(u):
+    Uhat.append(tmp.pop())
+del tmp
 
-    se = L[0:1,:,:,:]
-    print('Predicting h2')
-    p = h2.infer(sess,se)
-    print('Prediction h2 => ',np.argmax(p))
+# Create a pool U' of examples by choosing u examples random from U
+# U' created (Uhat)
+P = 1
+N = 3
 
+for k in range(1): 
+    #se = L[0:1,:,:,:]
+    #p = h1.infer(sess,se)
+    #np.argmax(p)
+
+    # Use L to train a classifier h1 that considers only the x1 portion of x
     print('Training h1')
     h1.run(sess, L, L_y, 1, 64, 200, plot_losses=False)
 
+    # Use L to train a classifier h2 that considers only the x2 portion of x
     print('Training h2')
     h2.run(sess, L, L_y, 1, 64, 200, plot_losses=False)
+
+    print("DEBUG")
+    print("UHAT SHAPE BEFORE",len(Uhat))
+    print("U SHAPE BEFORE",U.shape)
+    # Allow h1 to label p positive and n negative examples from U'
+    i = 0
+    np.random.shuffle(Uhat)
+    Uhat = list(Uhat)
+    
+    positives = []
+    negatives = []
+    p = 1 * P
+    n = 1 * N
+    while(i < len(Uhat)):
+        if p<1 and n<1:
+            break
+
+        ex = np.asarray(Uhat[i]) # (32,32,3)
+        ex = np.reshape(ex,(1,32,32,3)) # (1,32,32,3)
+        pred1 = h1.infer(sess,ex)
+        pred1 = np.argmax(pred1)
+
+        if pred1 == 1 and p>0:
+            positives.append(np.reshape(ex,(32,32,3))) # To preserve the shape after append!
+            Uhat.pop(i) # Remove that example from U'
+            p -= 1
+        elif pred1 == 0 and n>0:
+            negatives.append(np.reshape(ex,(32,32,3)))
+            Uhat.pop(i)
+            n -= 1
+
+        i += 1
+
+    # Adding self-labeled examples to L
+    L = list(L)
+    L_y = list(L_y)
+    for p in positives:
+        L.append(p)
+        L_y.append(1) # Positive examples have a label of 1
+    
+    for n in negatives:
+        L.append(n)
+        L_y.append(0)
+
+    # Allow h2 to label p positive and n negative examples from U'
+    i = 0
+    np.random.shuffle(Uhat)
+    Uhat = list(Uhat)
+
+    positives = []
+    negatives = []
+    p = 1 * P
+    n = 1 * N
+    while(i < len(Uhat)):
+        if p<1 and n<1:
+            break
+
+        ex = np.asarray(Uhat[i]) # (32,32,3)
+        ex = np.reshape(ex,(1,32,32,3)) # (1,32,32,3)
+        pred1 = h2.infer(sess,ex)
+        pred1 = np.argmax(pred1)
+
+        if pred1 == 1 and p>0:
+            positives.append(np.reshape(ex,(32,32,3)))
+            Uhat.pop(i) # Remove that example from U'
+            p -= 1
+        elif pred1 == 0 and n>0:
+            negatives.append(np.reshape(ex,(32,32,3)))
+            Uhat.pop(i)
+            n -= 1
+
+        i += 1
+        
+
+
+    # Adding self-labeled examples to L
+    for p in positives:
+        L.append(p)
+        L_y.append(1) # Positive examples have a label of 1
+    
+    for n in negatives:
+        L.append(n)
+        L_y.append(0)
+
+    L = np.asarray(L)
+    L_y = np.asarray(L_y)
+
+
+    # Randomly choose 2p + 2n examples from U to replenish U'
+    U = list(U)
+    for i in range(2*P + 2*N):
+        ex = np.asarray(U.pop()) #(32,32,3)
+        Uhat.append(ex)
+
+
+    U = np.asarray(U)
     
     print('Validation h1')
     h1.run(sess, X_val, y_val, 1, 64)
