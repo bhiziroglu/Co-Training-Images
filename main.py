@@ -101,7 +101,7 @@ L_y = y_train[0:1000]
 tf.reset_default_graph()
 
 #with tf.variable_scope('h1'):
-X1 = tf.placeholder(tf.float32, [None, 32, 32, 3])
+X1 = tf.placeholder(tf.float32, [None, 32, 16, 3])
 y1 = tf.placeholder(tf.int64, [None])
 is_training1 = tf.placeholder(tf.bool)
 h1 = cifar.CifarNet(X1,y1,is_training1,"1")
@@ -109,7 +109,7 @@ h1.forward()
 h1.set_params()
 
 #with tf.variable_scope('h2'):
-X2 = tf.placeholder(tf.float32, [None, 32, 32, 3])
+X2 = tf.placeholder(tf.float32, [None, 32, 16, 3])
 y2 = tf.placeholder(tf.int64, [None])
 is_training2 = tf.placeholder(tf.bool)
 h2 = cifar.CifarNet(X2,y2,is_training2,"2")
@@ -134,22 +134,20 @@ del tmp
 P = 1
 N = 3
 
-for k in range(1): 
+for k in range(10): 
     #se = L[0:1,:,:,:]
     #p = h1.infer(sess,se)
     #np.argmax(p)
 
     # Use L to train a classifier h1 that considers only the x1 portion of x
     print('Training h1')
-    h1.run(sess, L, L_y, 1, 64, 200, plot_losses=False)
+    h1.run(sess, L[:,:,0:16,:], L_y, 1, 64, 200, plot_losses=False)
+
 
     # Use L to train a classifier h2 that considers only the x2 portion of x
     print('Training h2')
-    h2.run(sess, L, L_y, 1, 64, 200, plot_losses=False)
+    h2.run(sess, L[:,:,16:,:], L_y, 1, 64, 200, plot_losses=False)
 
-    print("DEBUG")
-    print("UHAT SHAPE BEFORE",len(Uhat))
-    print("U SHAPE BEFORE",U.shape)
     # Allow h1 to label p positive and n negative examples from U'
     i = 0
     np.random.shuffle(Uhat)
@@ -165,7 +163,7 @@ for k in range(1):
 
         ex = np.asarray(Uhat[i]) # (32,32,3)
         ex = np.reshape(ex,(1,32,32,3)) # (1,32,32,3)
-        pred1 = h1.infer(sess,ex)
+        pred1 = h1.infer(sess,ex[:,:,0:16,:])
         pred1 = np.argmax(pred1)
 
         if pred1 == 1 and p>0:
@@ -205,7 +203,7 @@ for k in range(1):
 
         ex = np.asarray(Uhat[i]) # (32,32,3)
         ex = np.reshape(ex,(1,32,32,3)) # (1,32,32,3)
-        pred1 = h2.infer(sess,ex)
+        pred1 = h2.infer(sess,ex[:,:,16:,:])
         pred1 = np.argmax(pred1)
 
         if pred1 == 1 and p>0:
@@ -243,8 +241,9 @@ for k in range(1):
 
     U = np.asarray(U)
     
-    print('Validation h1')
-    h1.run(sess, X_val, y_val, 1, 64)
 
-    print('Validation h2')
-    h2.run(sess, X_val, y_val, 1, 64)
+print('Validation h1')
+h1.run(sess, X_val, y_val, 1, 64)
+
+print('Validation h2')
+h2.run(sess, X_val, y_val, 1, 64)
