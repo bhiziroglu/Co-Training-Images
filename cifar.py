@@ -16,7 +16,7 @@ class CifarNet():
         self.Wconv2 = tf.get_variable("Wconv2"+modelName, shape=[5, 5, 32, 64])
         self.bconv2 = tf.get_variable("bconv2"+modelName, shape=[64])
 
-        self.W1 = tf.get_variable("W1"+modelName, shape=[3136, 1024])
+        self.W1 = tf.get_variable("W1"+modelName, shape=[1344, 1024])
         self.b1 = tf.get_variable("b1"+modelName, shape=[1024])
 
         self.W2 = tf.get_variable("W2"+modelName, shape=[1024, 2])
@@ -69,7 +69,7 @@ class CifarNet():
         # 2x2 Max Pooling layer with a stride of 2
         maxpool = tf.layers.max_pooling2d(relu2, pool_size=(2,2), strides=2)
         print(maxpool.shape)
-        maxpool_flat = tf.reshape(maxpool,[-1,3136])
+        maxpool_flat = tf.reshape(maxpool,[-1,1344])
         # Spatial Batch Normalization Layer (trainable parameters, with scale and centering)
         bn1 = tf.layers.batch_normalization(inputs=maxpool_flat, center=True, scale=True, training=self.is_training)
         # Affine layer with 1024 output units
