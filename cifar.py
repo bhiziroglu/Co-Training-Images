@@ -102,8 +102,8 @@ class CifarNet():
         
         return pred
 
-    def run(self, session, Xd, yd,
-                  epochs=1, batch_size=64, print_every=100,
+    def run(self, session, Xd, yd, epoch_counter,
+                  epochs=1, batch_size=64, print_every=100, 
                   plot_losses=False, isSoftMax=False):
         # have tensorflow compute accuracy
         if isSoftMax:
@@ -159,7 +159,7 @@ class CifarNet():
             total_correct = correct/Xd.shape[0]
             total_loss = np.sum(losses)/Xd.shape[0]
             print("Epoch {2}, Overall loss = {0:.3g} and accuracy of {1:.3g}"\
-                  .format(total_loss,total_correct,e+1))
+                  .format(total_loss,total_correct,epoch_counter+1))
             if plot_losses:
                 plt.plot(losses)
                 plt.grid(True)

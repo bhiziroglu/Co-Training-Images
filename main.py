@@ -92,11 +92,41 @@ for i in range(len(y_test)):
     else:
         y_test[i] = 0
 
-L = X_train[0:1000,:,:,:] # a set L of labeled training examples
-U = X_train[1000:,:,:,:] # a set U of unlabeled examples
-L_y = y_train[0:1000]
+
+'''Stratifying the labeled dataset'''
+'''1000 Images -> 100 Images of each class'''
+L = []
+L_y = []
+
+#L = X_train[0:1000,:,:,:] # a set L of labeled training examples (1000, 32, 32, 3)
+#U = X_train[1000:,:,:,:] # a set U of unlabeled examples (48000, 32, 32, 3)
+#L_y = y_train[0:1000] # (1000,)
+
+positive_counter = 0
+negative_counter = 0
+for index in range(len(X_train)):
+
+    if positive_counter == 100 and negative_counter == 900:
+        break
+
+    if y_train[index] == 1:
+        if positive_counter == 100:
+            continue
+        positive_counter += 1
+        L.append(X_train[index])
+        L_y.append(1)
+    else:
+        if negative_counter == 900:
+            continue
+        negative_counter += 1
+        L.append(X_train[index])
+        L_y.append(0)
+
+L = np.asarray(L) # a set L of labeled training examples (1000, 32, 32, 3)
+L_y = np.asarray(L_y) # a set U of unlabeled examples (48000, 32, 32, 3)
 
 
+exit()
 
 tf.reset_default_graph()
 
@@ -135,18 +165,15 @@ P = 1
 N = 3
 
 for k in range(10): 
-    #se = L[0:1,:,:,:]
-    #p = h1.infer(sess,se)
-    #np.argmax(p)
 
     # Use L to train a classifier h1 that considers only the x1 portion of x
     print('Training h1')
-    h1.run(sess, L[:,:,0:16,:], L_y, 1, 64, 200, plot_losses=False)
+    h1.run(sess, L[:,:,0:16,:], L_y, k, 1, 64, 200, plot_losses=False)
 
 
     # Use L to train a classifier h2 that considers only the x2 portion of x
     print('Training h2')
-    h2.run(sess, L[:,:,16:,:], L_y, 1, 64, 200, plot_losses=False)
+    h2.run(sess, L[:,:,16:,:], L_y, k, 1, 64, 200, plot_losses=False)
 
     # Allow h1 to label p positive and n negative examples from U'
     i = 0
