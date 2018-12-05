@@ -9,6 +9,7 @@ class CifarNet():
         self.X = X
         self.y = y
         self.is_training = is_training
+        self.modelName = modelName
 
         self.Wconv1 = tf.get_variable("Wconv1"+modelName, shape=[5, 5, 3, 32])
         self.bconv1 = tf.get_variable("bconv1"+modelName, shape=[32])
@@ -102,6 +103,7 @@ class CifarNet():
         
         return pred
 
+
     def run(self, session, Xd, yd, epoch_counter,
                   epochs=1, batch_size=64, print_every=100, 
                   plot_losses=False, isSoftMax=False):
@@ -153,11 +155,11 @@ class CifarNet():
 
                 # print every now and then
                 if training_now and (iter_cnt % print_every) == 0:
-                    print("Iteration {0}: with minibatch training loss = {1:.3g} and accuracy of {2:.2g}"\
-                          .format(iter_cnt,loss,np.sum(corr)/actual_batch_size))
+                    print("Model:"+self.modelName + " Iteration {0}: with minibatch training loss = {1:.3g} and accuracy of {2:.2g}"\
+                          .format(iter_cnt,loss,np.sum(corr)*1.0/actual_batch_size))
                 iter_cnt += 1
-            total_correct = correct/Xd.shape[0]
-            total_loss = np.sum(losses)/Xd.shape[0]
+            total_correct = correct*1.0/Xd.shape[0]
+            total_loss = np.sum(losses)*1.0/Xd.shape[0]
             print("Epoch {2}, Overall loss = {0:.3g} and accuracy of {1:.3g}"\
                   .format(total_loss,total_correct,epoch_counter+1))
             if plot_losses:

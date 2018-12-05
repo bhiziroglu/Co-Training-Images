@@ -97,13 +97,14 @@ for i in range(len(y_test)):
 '''1000 Images -> 100 Images of each class'''
 L = []
 L_y = []
-
+U = [] 
 #L = X_train[0:1000,:,:,:] # a set L of labeled training examples (1000, 32, 32, 3)
 #U = X_train[1000:,:,:,:] # a set U of unlabeled examples (48000, 32, 32, 3)
 #L_y = y_train[0:1000] # (1000,)
 
 positive_counter = 0
 negative_counter = 0
+seen_example_indices = [] # Store the seen examples and remove them from the unlabeled dataset
 for index in range(len(X_train)):
 
     if positive_counter == 100 and negative_counter == 900:
@@ -115,18 +116,24 @@ for index in range(len(X_train)):
         positive_counter += 1
         L.append(X_train[index])
         L_y.append(1)
+        seen_example_indices.append(index)
     else:
         if negative_counter == 900:
             continue
         negative_counter += 1
         L.append(X_train[index])
         L_y.append(0)
+        seen_example_indices.append(index)
+
+# Unlabeled dataset formed by examples that is not in the labeled dataset
+for i in range(49000):
+    if not i in seen_example_indices:
+        U.append(X_train[i])
+
 
 L = np.asarray(L) # a set L of labeled training examples (1000, 32, 32, 3)
-L_y = np.asarray(L_y) # a set U of unlabeled examples (48000, 32, 32, 3)
-
-
-exit()
+L_y = np.asarray(L_y) 
+U = np.asarray(U) # a set U of unlabeled examples (48000, 32, 32, 3)
 
 tf.reset_default_graph()
 
@@ -164,7 +171,7 @@ del tmp
 P = 1
 N = 3
 
-for k in range(10): 
+for k in range(1): 
 
     # Use L to train a classifier h1 that considers only the x1 portion of x
     print('Training h1')
@@ -270,7 +277,7 @@ for k in range(10):
     
 
 print('Validation h1')
-h1.run(sess, X_val, y_val, 1, 64)
+h1.run(sess, X_val[:,:,0:16,:], y_val, 1, 64)
 
 print('Validation h2')
-h2.run(sess, X_val, y_val, 1, 64)
+h2.run(sess, X_val[:,:,16:,:], y_val, 1, 64)
