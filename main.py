@@ -134,7 +134,7 @@ for i in range(49000):
 
 L = np.asarray(L) # a set L of labeled training examples (1000, 32, 32, 3)
 L_y = np.asarray(L_y) 
-U = np.asarray(U) # a set U of unlabeled examples (48000, 32, 32, 3)
+U = np.asarray(U, dtype = np.int8) # a set U of unlabeled examples (48000, 32, 32, 3)
 
 tf.reset_default_graph()
 
