@@ -6,6 +6,7 @@ import cPickle as pickle
 import random
 import os
 import cifar
+import cv2
 
 classes = ('plane', 'car', 'bird', 'cat',
            'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
@@ -70,6 +71,9 @@ def get_CIFAR10_data(num_training=49000, num_validation=1000, num_test=10000):
     return X_train, y_train, X_val, y_val, X_test, y_test
 
 
+def show_image(img):
+    cv2.imshow('example_image' ,np.array(img, dtype = np.uint8))
+    cv2.waitKey(0)
 
 # Invoke the above function to get our data.
 X_train, y_train, X_val, y_val, X_test, y_test = get_CIFAR10_data()
@@ -95,12 +99,9 @@ for i in range(len(y_test)):
 
 '''Stratifying the labeled dataset'''
 '''1000 Images -> 100 Images of each class'''
-L = []
-L_y = []
-U = [] 
-#L = X_train[0:1000,:,:,:] # a set L of labeled training examples (1000, 32, 32, 3)
-#U = X_train[1000:,:,:,:] # a set U of unlabeled examples (48000, 32, 32, 3)
-#L_y = y_train[0:1000] # (1000,)
+L = []   # a set L of labeled training examples (1000, 32, 32, 3)
+L_y = [] # a set U of unlabeled examples (48000, 32, 32, 3)
+U = []   # (1000,)
 
 positive_counter = 0
 negative_counter = 0
