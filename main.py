@@ -6,7 +6,7 @@ import cPickle as pickle
 import random
 import os
 import cifar
-import cv2
+#import cv2
 
 classes = ('plane', 'car', 'bird', 'cat',
            'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
@@ -100,26 +100,26 @@ for i in range(len(y_test)):
 '''Stratifying the labeled dataset'''
 '''1000 Images -> 100 Images of each class'''
 L = []   # a set L of labeled training examples (1000, 32, 32, 3)
-L_y = [] # a set U of unlabeled examples (48000, 32, 32, 3)
-U = []   # (1000,)
+L_y = [] # (1000,)
+U = []   # a set U of unlabeled examples (48000, 32, 32, 3)
 
 positive_counter = 0
 negative_counter = 0
 seen_example_indices = [] # Store the seen examples and remove them from the unlabeled dataset
 for index in range(len(X_train)):
 
-    if positive_counter == 100 and negative_counter == 900:
+    if positive_counter == 10 and negative_counter == 90:
         break
 
     if y_train[index] == 1:
-        if positive_counter == 100:
+        if positive_counter == 10:
             continue
         positive_counter += 1
         L.append(X_train[index])
         L_y.append(1)
         seen_example_indices.append(index)
     else:
-        if negative_counter == 900:
+        if negative_counter == 90:
             continue
         negative_counter += 1
         L.append(X_train[index])
@@ -172,7 +172,7 @@ del tmp
 P = 1
 N = 3
 
-for k in range(5): 
+for k in range(30): 
 
     # Use L to train a classifier h1 that considers only the x1 portion of x
     print('Training h1')
