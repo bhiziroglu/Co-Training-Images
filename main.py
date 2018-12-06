@@ -171,12 +171,11 @@ del tmp
 P = 1
 N = 3
 
-for k in range(1): 
+for k in range(5): 
 
     # Use L to train a classifier h1 that considers only the x1 portion of x
     print('Training h1')
     h1.run(sess, L[:,:,0:16,:], L_y, k, 1, 64, 200, plot_losses=False)
-
 
     # Use L to train a classifier h2 that considers only the x2 portion of x
     print('Training h2')
@@ -277,7 +276,7 @@ for k in range(1):
     
 
 print('Validation h1')
-h1.run(sess, X_val[:,:,0:16,:], y_val, 1, 64)
+h1.validate(sess,X_val[:,:,0:16,:],y_val)
 
 print('Validation h2')
-h2.run(sess, X_val[:,:,16:,:], y_val, 1, 64)
+h2.validate(sess,X_val[:,:,16:,:],y_val)

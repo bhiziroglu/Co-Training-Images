@@ -103,6 +103,22 @@ class CifarNet():
         
         return pred
 
+    def validate(self, session, Xd, yd):
+
+        yd = np.reshape(yd,(1000)) # Shape (1000,)
+
+        preds = self.infer(session,Xd)
+        res = np.argmax(preds,2)
+        res = np.reshape(res,(1000)) # Shape (1000,)
+        
+        correct = 0 # How many are labeled correctly >
+        
+        for index in range(len(res)):
+            if res[index] == yd[index]:
+                correct += 1.0
+        
+        acc = correct * 1.0 / res.shape[0]
+        print("Validation accuracy ",acc)
 
     def run(self, session, Xd, yd, epoch_counter,
                   epochs=1, batch_size=64, print_every=100, 
