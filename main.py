@@ -172,7 +172,7 @@ del tmp
 P = 1
 N = 3
 
-for k in range(30): 
+for k in range(5): 
 
     # Use L to train a classifier h1 that considers only the x1 portion of x
     print('Training h1')
@@ -276,8 +276,8 @@ for k in range(30):
     U = np.asarray(U)
     
 
-print('Validation h1')
-h1.validate(sess,X_val[:,:,0:16,:],y_val)
+    print('Validation h1')
+    h1.recall(sess,X_val[:,:,0:16,:],y_val)
 
-print('Validation h2')
-h2.validate(sess,X_val[:,:,16:,:],y_val)
+    print('Validation h2')
+    h2.recall(sess,X_val[:,:,16:,:],y_val)

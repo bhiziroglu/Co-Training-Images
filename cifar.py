@@ -103,6 +103,32 @@ class CifarNet():
         
         return pred
 
+    def recall(self, session, Xd, yd): # Only checks if positive labels are correctly labeled
+
+        yd = np.reshape(yd,(1000)) # Shape (1000,)
+
+        preds = self.infer(session,Xd)
+        res = np.argmax(preds,2)
+        res = np.reshape(res,(1000)) # Shape (1000,)
+        
+        correct = 0 # How many are labeled correctly >
+        total_positives = 0
+
+        for index in range(len(res)):
+            
+            if yd[index] == 1:
+                total_positives += 1
+            
+            if res[index] == 1 and yd[index] == 1:
+                correct += 1.0
+            
+        
+        #acc = correct * 1.0 / res.shape[0]
+        acc = correct * 1.0 / total_positives
+        print("Correct guesses:",correct," Total positives: ",total_positives," Recall accuracy ",acc)
+
+
+
     def validate(self, session, Xd, yd):
 
         yd = np.reshape(yd,(1000)) # Shape (1000,)
@@ -112,7 +138,7 @@ class CifarNet():
         res = np.reshape(res,(1000)) # Shape (1000,)
         
         correct = 0 # How many are labeled correctly >
-        
+
         for index in range(len(res)):
             if res[index] == yd[index]:
                 correct += 1.0
