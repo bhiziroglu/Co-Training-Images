@@ -172,7 +172,7 @@ del tmp
 P = 1
 N = 3
 
-for k in range(5): 
+for k in range(2): 
 
     # Use L to train a classifier h1 that considers only the x1 portion of x
     print('Training h1')
@@ -245,7 +245,7 @@ for k in range(5):
             Uhat.pop(i) # Remove that example from U'
             p -= 1
         elif pred1 == 0 and n>0:
-            negatives.append(np.reshape(ex,(32,32,3)))
+            negatives.append(np.reshape(ex,(32,32,3)))  
             Uhat.pop(i)
             n -= 1
 
@@ -277,7 +277,7 @@ for k in range(5):
     
 
     print('Validation h1')
-    h1.recall(sess,X_val[:,:,0:16,:],y_val)
+    h1.accuracy(sess,X_val[:,:,0:16,:],y_val)
 
     print('Validation h2')
-    h2.recall(sess,X_val[:,:,16:,:],y_val)
+    h2.accuracy(sess,X_val[:,:,16:,:],y_val)

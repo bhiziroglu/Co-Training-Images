@@ -103,6 +103,47 @@ class CifarNet():
         
         return pred
 
+    def accuracy(self, session, Xd, yd):
+        yd = np.reshape(yd,(1000)) # Shape (1000,)
+
+        preds = self.infer(session,Xd)
+        res = np.argmax(preds,2)
+        res = np.reshape(res,(1000)) # Shape (1000,)
+
+        true_positives = 0
+        true_negatives = 0
+        false_positives = 0
+        false_negatives = 0
+
+        for index in range(len(res)):
+
+            if res[index] == 1 and yd[index] == 1:
+                true_positives += 1.0
+            elif res[index] == 0 and yd[index] == 0:
+                true_negatives += 1.0
+            elif res[index] == 1 and yd[index] == 0:
+                false_positives += 1.0
+            elif res[index] == 0 and yd[index] == 1:
+                false_negatives += 1.0
+
+        print("TP",true_positives)
+        print("TN",true_negatives)
+        print("FP",false_positives)
+        print("FN",false_negatives)
+        accuracy = (true_positives + true_negatives) / (true_negatives + true_positives + false_negatives + false_positives)
+        if true_positives == 0:
+            precision = 0
+            recall = 0
+            f1 = 0
+        else:
+            precision = true_positives / (true_positives + false_positives)
+            recall = true_positives / (true_positives + false_negatives)
+            f1 = (2 * recall * precision) / (recall + precision)
+        print(self.modelName + ": Accuracy: ",accuracy)
+        print(self.modelName + ": Precision: ",precision)
+        print(self.modelName + ": Recall: ",recall)
+        print(self.modelName + ": f1: ",f1)
+
     def recall(self, session, Xd, yd): # Only checks if positive labels are correctly labeled
 
         yd = np.reshape(yd,(1000)) # Shape (1000,)
@@ -126,6 +167,9 @@ class CifarNet():
         #acc = correct * 1.0 / res.shape[0]
         acc = correct * 1.0 / total_positives
         print("Correct guesses:",correct," Total positives: ",total_positives," Recall accuracy ",acc)
+        s = self.modelName + ": " + str(acc) + "\n"
+        f = open("results.txt", "a")
+        f.write(s)
 
 
 
