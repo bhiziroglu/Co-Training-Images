@@ -106,20 +106,21 @@ U = []   # a set U of unlabeled examples (48000, 32, 32, 3)
 positive_counter = 0
 negative_counter = 0
 seen_example_indices = [] # Store the seen examples and remove them from the unlabeled dataset
+LABELED_DATA_SET_SIZE = 5000
 for index in range(len(X_train)):
 
-    if positive_counter == 10 and negative_counter == 90:
+    if positive_counter == LABELED_DATA_SET_SIZE/10 and negative_counter == (LABELED_DATA_SET_SIZE - LABELED_DATA_SET_SIZE/10):
         break
 
     if y_train[index] == 1:
-        if positive_counter == 10:
+        if positive_counter == LABELED_DATA_SET_SIZE/10:
             continue
         positive_counter += 1
         L.append(X_train[index])
         L_y.append(1)
         seen_example_indices.append(index)
     else:
-        if negative_counter == 90:
+        if negative_counter == (LABELED_DATA_SET_SIZE - LABELED_DATA_SET_SIZE/10):
             continue
         negative_counter += 1
         L.append(X_train[index])
@@ -127,11 +128,23 @@ for index in range(len(X_train)):
         seen_example_indices.append(index)
 
 # Unlabeled dataset formed by examples that is not in the labeled dataset
-for i in range(49000):
-    if not i in seen_example_indices:
-        U.append(X_train[i])
+Ucounter = 0
+cnt = 0
+while Ucounter != (48000 - LABELED_DATA_SET_SIZE):
+    #print("Ucounter",Ucounter)
+    #print("cnt",cnt)
+    if cnt in seen_example_indices:
+        cnt = cnt + 1
+    else:
+        Ucounter += 1
+        U.append(X_train[cnt])
+        cnt = cnt + 1
 
 
+print("SEEN EXAMPLE INI",len(seen_example_indices))
+print("POSITIVE COUNTER",positive_counter)
+print("NEGATIVE COUNTER",negative_counter)
+print("U LENGTH: ",len(U))
 L = np.asarray(L) # a set L of labeled training examples (1000, 32, 32, 3)
 L_y = np.asarray(L_y) 
 U = np.asarray(U, dtype = np.int8) # a set U of unlabeled examples (48000, 32, 32, 3)
@@ -160,7 +173,7 @@ init = tf.global_variables_initializer()
 sess.run(init)
 
 
-u = 75 # Choose u examples from U
+u = 3000 # Choose u examples from U
 Uhat = []
 tmp = list(U)
 for i in range(u):
@@ -169,10 +182,10 @@ del tmp
 
 # Create a pool U' of examples by choosing u examples random from U
 # U' created (Uhat)
-P = 1
-N = 3
+P = 100
+N = 200
 
-for k in range(2): 
+for k in range(100): 
 
     # Use L to train a classifier h1 that considers only the x1 portion of x
     print('Training h1')
@@ -268,6 +281,9 @@ for k in range(2):
 
     # Randomly choose 2p + 2n examples from U to replenish U'
     U = list(U)
+    if (2*P + 2*N) > len(U):
+        break
+
     for i in range(2*P + 2*N):
         ex = np.asarray(U.pop()) #(32,32,3)
         Uhat.append(ex)

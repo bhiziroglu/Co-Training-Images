@@ -143,6 +143,9 @@ class CifarNet():
         print(self.modelName + ": Precision: ",precision)
         print(self.modelName + ": Recall: ",recall)
         print(self.modelName + ": f1: ",f1)
+        s = self.modelName + ": " + str(precision) + "\n"
+        f = open("results.txt", "a")
+        f.write(s)
 
     def recall(self, session, Xd, yd): # Only checks if positive labels are correctly labeled
 
