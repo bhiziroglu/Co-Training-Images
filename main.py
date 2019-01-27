@@ -64,10 +64,10 @@ def get_CIFAR10_data(num_training=49000, num_validation=1000, num_test=10000):
     y_test = y_test[mask]
     # SUBTRACTING MEAN INCREASE ACCURACY ???? TRY OUT ???
     # Normalize the data: subtract the mean image # SUBTRACTING MEAN INCREASE ACCURACY ???? TRY OUT ???
-    #mean_image = np.mean(X_train, axis=0)
-    #X_train -= mean_image
-    #X_val -= mean_image
-    #X_test -= mean_image
+    mean_image = np.mean(X_train, axis=0)
+    X_train -= mean_image
+    X_val -= mean_image
+    X_test -= mean_image
     return X_train, y_train, X_val, y_val, X_test, y_test
 
 
@@ -106,7 +106,7 @@ U = []   # a set U of unlabeled examples (48000, 32, 32, 3)
 positive_counter = 0
 negative_counter = 0
 seen_example_indices = [] # Store the seen examples and remove them from the unlabeled dataset
-LABELED_DATA_SET_SIZE = 5000
+LABELED_DATA_SET_SIZE = 4000
 for index in range(len(X_train)):
 
     if positive_counter == LABELED_DATA_SET_SIZE/10 and negative_counter == (LABELED_DATA_SET_SIZE - LABELED_DATA_SET_SIZE/10):
@@ -131,8 +131,7 @@ for index in range(len(X_train)):
 Ucounter = 0
 cnt = 0
 while Ucounter != (48000 - LABELED_DATA_SET_SIZE):
-    #print("Ucounter",Ucounter)
-    #print("cnt",cnt)
+
     if cnt in seen_example_indices:
         cnt = cnt + 1
     else:
@@ -140,11 +139,6 @@ while Ucounter != (48000 - LABELED_DATA_SET_SIZE):
         U.append(X_train[cnt])
         cnt = cnt + 1
 
-
-print("SEEN EXAMPLE INI",len(seen_example_indices))
-print("POSITIVE COUNTER",positive_counter)
-print("NEGATIVE COUNTER",negative_counter)
-print("U LENGTH: ",len(U))
 L = np.asarray(L) # a set L of labeled training examples (1000, 32, 32, 3)
 L_y = np.asarray(L_y) 
 U = np.asarray(U, dtype = np.int8) # a set U of unlabeled examples (48000, 32, 32, 3)
@@ -173,7 +167,7 @@ init = tf.global_variables_initializer()
 sess.run(init)
 
 
-u = 3000 # Choose u examples from U
+u = 1000 # Choose u examples from U
 Uhat = []
 tmp = list(U)
 for i in range(u):
@@ -183,16 +177,16 @@ del tmp
 # Create a pool U' of examples by choosing u examples random from U
 # U' created (Uhat)
 P = 100
-N = 200
+N = 100
 
-for k in range(100): 
+for k in range(500): 
 
     # Use L to train a classifier h1 that considers only the x1 portion of x
-    print('Training h1')
+    #print('Training h1')
     h1.run(sess, L[:,:,0:16,:], L_y, k, 1, 64, 200, plot_losses=False)
 
     # Use L to train a classifier h2 that considers only the x2 portion of x
-    print('Training h2')
+    #print('Training h2')
     h2.run(sess, L[:,:,16:,:], L_y, k, 1, 64, 200, plot_losses=False)
 
     # Allow h1 to label p positive and n negative examples from U'
@@ -250,21 +244,19 @@ for k in range(100):
 
         ex = np.asarray(Uhat[i]) # (32,32,3)
         ex = np.reshape(ex,(1,32,32,3)) # (1,32,32,3)
-        pred1 = h2.infer(sess,ex[:,:,16:,:])
-        pred1 = np.argmax(pred1)
+        pred2 = h2.infer(sess,ex[:,:,16:,:])
+        pred2 = np.argmax(pred2)
 
-        if pred1 == 1 and p>0:
+        if pred2 == 1 and p>0:
             positives.append(np.reshape(ex,(32,32,3)))
             Uhat.pop(i) # Remove that example from U'
             p -= 1
-        elif pred1 == 0 and n>0:
+        elif pred2 == 0 and n>0:
             negatives.append(np.reshape(ex,(32,32,3)))  
             Uhat.pop(i)
             n -= 1
 
         i += 1
-        
-
 
     # Adding self-labeled examples to L
     for p in positives:
@@ -281,7 +273,7 @@ for k in range(100):
 
     # Randomly choose 2p + 2n examples from U to replenish U'
     U = list(U)
-    if (2*P + 2*N) > len(U):
+    if (2*P + 2*N) > len(U): # Break if we run out of images in our unlabeled dataset
         break
 
     for i in range(2*P + 2*N):
@@ -291,9 +283,6 @@ for k in range(100):
 
     U = np.asarray(U)
     
-
-    print('Validation h1')
     h1.accuracy(sess,X_val[:,:,0:16,:],y_val)
 
-    print('Validation h2')
     h2.accuracy(sess,X_val[:,:,16:,:],y_val)

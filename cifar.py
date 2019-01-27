@@ -28,7 +28,7 @@ class CifarNet():
 
         self.global_step = tf.Variable(0, trainable=False)
         self.starter_learning_rate = 1e-3
-        self.end_learning_rate = 5e-3
+        self.end_learning_rate = 7e-3
         self.decay_steps = 10000
 
         self.learning_rate = tf.train.polynomial_decay(self.starter_learning_rate, self.global_step,
@@ -45,51 +45,36 @@ class CifarNet():
         # define our optimizer
         self.optimizer = tf.train.AdamOptimizer(self.exp_learning_rate)
 
-        # batch normalization in tensorflow requires this extra dependency
-        #self.extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        #with tf.control_dependencies(self.extra_update_ops):
         self.train_step = self.optimizer.minimize(self.mean_loss, global_step=self.global_step)
-
-
-
 
     def forward(self):
 
         # define our graph (e.g. two_layer_convnet) with stride 1
         conv1 = tf.nn.conv2d(self.X, self.Wconv1, strides=[1, 1, 1, 1], padding='SAME') + self.bconv1
-        print(conv1.shape)
         # ReLU Activation Layer
         relu1 = tf.nn.relu(conv1)
-        print(relu1)
         # Conv
         conv2 = tf.nn.conv2d(relu1, self.Wconv2, strides=[1, 2, 2, 1], padding='VALID') + self.bconv2
-        print(conv2.shape)
         # ReLU Activation Layer
         relu2 = tf.nn.relu(conv2)
-        print(relu2)
         # 2x2 Max Pooling layer with a stride of 2
         maxpool = tf.layers.max_pooling2d(relu2, pool_size=(2,2), strides=2)
-        print(maxpool.shape)
         maxpool_flat = tf.reshape(maxpool,[-1,1344])
         # Spatial Batch Normalization Layer (trainable parameters, with scale and centering)
         bn1 = tf.layers.batch_normalization(inputs=maxpool_flat, center=True, scale=True, training=self.is_training)
         # Affine layer with 1024 output units
         affine1 = tf.matmul(bn1, self.W1) + self.b1
-        print(affine1.shape)
         # vanilla batch normalization
         affine1_flat = tf.reshape(affine1,[-1,1024])
         bn2 = tf.layers.batch_normalization(inputs=affine1, center=True, scale=True, training=self.is_training)
-        print(bn2.shape)
         # ReLU Activation Layer
         relu2 = tf.nn.relu(bn2)
-        print(relu2.shape)
         # dropout
         drop1 = tf.layers.dropout(inputs=relu2, training=self.is_training)
         # Affine layer from 1024 input units to 10 outputs
         affine2 = tf.matmul(drop1, self.W2) + self.b2
         # vanilla batch normalization
         self.predict = tf.layers.batch_normalization(inputs=affine2, center=True, scale=True, training=self.is_training)
-        print(self.predict.shape)
         return self.predict
 
     def infer(self, session, Xd):
@@ -126,10 +111,6 @@ class CifarNet():
             elif res[index] == 0 and yd[index] == 1:
                 false_negatives += 1.0
 
-        print("TP",true_positives)
-        print("TN",true_negatives)
-        print("FP",false_positives)
-        print("FN",false_negatives)
         accuracy = (true_positives + true_negatives) / (true_negatives + true_positives + false_negatives + false_positives)
         if true_positives == 0:
             precision = 0
@@ -139,59 +120,12 @@ class CifarNet():
             precision = true_positives / (true_positives + false_positives)
             recall = true_positives / (true_positives + false_negatives)
             f1 = (2 * recall * precision) / (recall + precision)
+
         print(self.modelName + ": Accuracy: ",accuracy)
         print(self.modelName + ": Precision: ",precision)
         print(self.modelName + ": Recall: ",recall)
         print(self.modelName + ": f1: ",f1)
-        s = self.modelName + ": " + str(precision) + "\n"
-        f = open("results.txt", "a")
-        f.write(s)
 
-    def recall(self, session, Xd, yd): # Only checks if positive labels are correctly labeled
-
-        yd = np.reshape(yd,(1000)) # Shape (1000,)
-
-        preds = self.infer(session,Xd)
-        res = np.argmax(preds,2)
-        res = np.reshape(res,(1000)) # Shape (1000,)
-        
-        correct = 0 # How many are labeled correctly >
-        total_positives = 0
-
-        for index in range(len(res)):
-            
-            if yd[index] == 1:
-                total_positives += 1
-            
-            if res[index] == 1 and yd[index] == 1:
-                correct += 1.0
-            
-        
-        #acc = correct * 1.0 / res.shape[0]
-        acc = correct * 1.0 / total_positives
-        print("Correct guesses:",correct," Total positives: ",total_positives," Recall accuracy ",acc)
-        s = self.modelName + ": " + str(acc) + "\n"
-        f = open("results.txt", "a")
-        f.write(s)
-
-
-
-    def validate(self, session, Xd, yd):
-
-        yd = np.reshape(yd,(1000)) # Shape (1000,)
-
-        preds = self.infer(session,Xd)
-        res = np.argmax(preds,2)
-        res = np.reshape(res,(1000)) # Shape (1000,)
-        
-        correct = 0 # How many are labeled correctly >
-
-        for index in range(len(res)):
-            if res[index] == yd[index]:
-                correct += 1.0
-        
-        acc = correct * 1.0 / res.shape[0]
-        print("Validation accuracy ",acc)
 
     def run(self, session, Xd, yd, epoch_counter,
                   epochs=1, batch_size=64, print_every=100, 
@@ -249,6 +183,16 @@ class CifarNet():
                 iter_cnt += 1
             total_correct = correct*1.0/Xd.shape[0]
             total_loss = np.sum(losses)*1.0/Xd.shape[0]
+            s2 = self.modelName + ": " + str(total_loss) + "\n"
+            f3 = open("loss.txt", "a")
+            f3.write(s2)
+            f3.close()
+
+            s_train_accuracy = self.modelName + ": " + str(total_correct) + "\n"
+            f5 = open("train_acc.txt","a")
+            f5.write(s_train_accuracy)
+            f5.close()
+
             print("Epoch {2}, Overall loss = {0:.3g} and accuracy of {1:.3g}"\
                   .format(total_loss,total_correct,epoch_counter+1))
             if plot_losses:
