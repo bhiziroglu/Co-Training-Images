@@ -2,7 +2,8 @@ import tensorflow as tf
 import numpy as np
 import math
 
-# define net
+# Inspired from kaapex's Kaggle Kernel
+
 class CifarNet():
 
     def __init__(self, X, y, is_training, modelName):
