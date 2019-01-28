@@ -47,6 +47,9 @@ Positive/Negative Examples: 100
 ```
 ![Alt text](/figs/exp3.png?raw=true "Experiment 3")  
 
+### Notes
+
+The performance of this model, like any other semi-supervised learning algorithm, is not generally very stable because the unlabeled examples may be wrongly labeled during the training process.
 
 ### References
 
